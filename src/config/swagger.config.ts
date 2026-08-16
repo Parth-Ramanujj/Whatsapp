@@ -55,8 +55,8 @@ export function createSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
   const { version } = require('../../package.json') as { version: string };
   return (
     new DocumentBuilder()
-      .setTitle('OpenWA API')
-      .setDescription('Open Source WhatsApp API Gateway - Free, Self-Hosted HTTP API')
+      .setTitle('Artha API')
+      .setDescription('Artha WhatsApp API Gateway')
       .setVersion(version)
       .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, API_KEY_SECURITY_SCHEME)
       // The METRICS_TOKEN bearer gates only GET /api/metrics (applied per-operation there —
@@ -73,7 +73,7 @@ export function createSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
       // Apply the scheme globally so Swagger UI sends the key with every request
       // (mirrors the global ApiKeyGuard). Without this, "Authorize" is cosmetic.
       .addSecurityRequirements(API_KEY_SECURITY_SCHEME)
-      .setContact('OpenWA', 'https://github.com/rmyndharis/OpenWA', 'yudhi@rmyndharis.com')
+      .setContact('Artha', '', '')
       .addTag('sessions', 'WhatsApp session management')
       .addTag('messages', 'Send and manage messages')
       .addTag('webhooks', 'Webhook configuration')
@@ -100,7 +100,7 @@ export function createSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
       // variables keep Swagger UI "Try it" usable on real deployments (a hardcoded
       // localhost URL would break Try-it for anyone serving elsewhere). Static consumers
       // of the spec (the docs site) also get a concrete base URL to display.
-      .addServer('http://{host}:{port}', 'OpenWA instance', {
+      .addServer('http://{host}:{port}', 'Artha instance', {
         host: { default: 'localhost' },
         port: { default: '2785', description: 'PORT env var' },
       })

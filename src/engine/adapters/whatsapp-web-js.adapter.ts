@@ -651,6 +651,7 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
           handleSIGINT: false,
           handleSIGTERM: false,
           handleSIGHUP: false,
+          protocolTimeout: 0,
           // Only override the executable when explicitly configured; otherwise let
           // whatsapp-web.js fall back to Puppeteer's bundled Chromium.
           ...(this.config.puppeteer?.executablePath ? { executablePath: this.config.puppeteer.executablePath } : {}),
@@ -3078,16 +3079,39 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
 
   async getChats(): Promise<ChatSummary[]> {
     this.ensureReady();
-    const chats = await this.client!.getChats();
+    
+    // Instead of transferring full Chat instances over CDP and parsing them (which causes timeouts
+    // for massive accounts), we extract only the lightweight ChatSummary fields directly from the
+    // browser's local store.
+    const rawSummaries = await this.client!.pupPage!.evaluate(() => {
+        const chatModels = window.require('WAWebCollections').Chat.getModelsArray();
+        return chatModels.map((chat: any) => {
+            let lastMessageBody = undefined;
+            let lastMessageType = undefined;
+            
+            if (chat.msgs && chat.msgs.models && chat.msgs.models.length > 0) {
+                const lastMsg = chat.msgs.models[chat.msgs.models.length - 1];
+                lastMessageBody = lastMsg.body;
+                lastMessageType = lastMsg.type;
+            }
+
+            return {
+                id: chat.id ? chat.id._serialized : undefined,
+                name: chat.formattedTitle || chat.name,
+                isGroup: Boolean(chat.isGroup),
+                unreadCount: chat.unreadCount || 0,
+                timestamp: chat.t || 0,
+                lastMessageType,
+                lastMessageBody
+            };
+        });
+    });
+
     const summaries: ChatSummary[] = [];
     let skipped = 0;
 
-    // Map the raw whatsapp-web.js chat objects to the library-agnostic ChatSummary
-    // shape so that no library types leak past the engine boundary. Some WA system
-    // or channel-like entries can lack the normal serialized id; skip those instead
-    // of failing the whole dashboard chats request.
-    for (const chat of chats) {
-      const id = chat.id?._serialized;
+    for (const chat of rawSummaries) {
+      const id = chat.id;
       if (!id) {
         skipped++;
         continue;
@@ -3096,12 +3120,12 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       summaries.push({
         id,
         name: chat.name || id,
-        isGroup: Boolean(chat.isGroup),
+        isGroup: chat.isGroup,
         kind: chatKind(id),
-        unreadCount: chat.unreadCount || 0,
-        timestamp: chat.timestamp || 0,
+        unreadCount: chat.unreadCount,
+        timestamp: chat.timestamp,
         // A location message's body is the base64 map thumbnail; don't surface it as the chat preview.
-        lastMessage: chat.lastMessage?.type === MessageTypes.LOCATION ? '📍' : chat.lastMessage?.body || undefined,
+        lastMessage: chat.lastMessageType === MessageTypes.LOCATION ? '📍' : chat.lastMessageBody || undefined,
       });
     }
 
