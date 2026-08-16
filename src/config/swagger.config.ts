@@ -47,7 +47,7 @@ export function exemptPublicOperations(document: OpenAPIObject): OpenAPIObject {
 }
 
 /**
- * Builds the OpenAPI document configuration for the OpenWA API.
+ * Builds the OpenAPI document configuration for the Artha API.
  */
 export function createSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
   // Source the API version from package.json so it tracks releases automatically — no manual bump, no drift.

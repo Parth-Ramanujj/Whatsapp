@@ -119,7 +119,7 @@ export function Login({ onLogin }: LoginProps) {
       <footer className="login-footer">
         <span>{t('login.footer')}</span>
         <a
-          href="https://github.com/rmyndharis/OpenWA"
+          href="https://github.com/rmyndharis/Artha"
           target="_blank"
           rel="noopener noreferrer"
           className="github-link"
